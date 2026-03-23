@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import path from "node:path";
 
 import { loadConfig } from "../src/config.mjs";
 
@@ -13,7 +14,7 @@ test("loadConfig merges env overrides", () => {
     },
   });
 
-  assert.equal(config.stateDir, "/tmp/bridge-state");
+  assert.equal(config.stateDir, path.resolve("/tmp/bridge-state"));
   assert.equal(config.ironclaw.baseUrl, "http://127.0.0.1:4567");
   assert.equal(config.ironclaw.gatewayToken, "secret");
   assert.equal(config.weixin.baseUrl, "https://example.weixin");
