@@ -1,6 +1,6 @@
 {
   "name": "ironclaw-weixin-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Standalone Weixin bridge for IronClaw using the gateway HTTP API",
   "keywords": [
     "ironclaw",
