@@ -8,13 +8,20 @@
 - 不改 `IronClaw` 源码
 - 通过扫码登录把微信消息桥接到 `IronClaw gateway`
 
-如果你只想快速跑起来，最短路径就是这 3 步：
+如果你本机已经装好并跑着 `IronClaw`，最短路径就是这 2 步：
 
 ```bash
-cp ./config.example.json ./config.local.json
-npx ironclaw-weixin-bridge login --config ./config.local.json --account default
-npx ironclaw-weixin-bridge run --config ./config.local.json
+npx ironclaw-weixin-bridge login --account default
+npx ironclaw-weixin-bridge run
 ```
+
+这版会优先自动发现本机 `IronClaw` 的：
+
+- gateway token
+- gateway host
+- gateway port
+
+自动发现走的是 `ironclaw config get ...`，所以只要本机 `ironclaw` 已经正常初始化，用户通常不需要再手填 `gatewayToken`。
 
 它不依赖：
 
@@ -63,7 +70,7 @@ npx ironclaw-weixin-bridge run --config ./config.local.json
 - Node.js 22+
 - 一个已经能正常运行的 `IronClaw` gateway
 - `IronClaw` 已启用 gateway
-- 你有可用的 gateway token
+- 本机可执行 `ironclaw`
 
 ## 配置文件
 
@@ -108,6 +115,7 @@ npx ironclaw-weixin-bridge run --config ./config.local.json
 - 仓库里的 `config.json` 只保留安全占位值，不要直接提交真实 token
 - 你自己的联调配置优先放到 `config.local.json` 或其他未纳入版本控制的文件里
 - `state/` 目录里会保存微信登录态和会话映射，不要提交
+- 如果不传 `--config`，程序会先走内置默认值，并自动尝试从本机 `ironclaw config` 读取 gateway 设置
 
 ### 环境变量覆盖
 
@@ -146,13 +154,13 @@ node ./src/cli.mjs help
 
 ## 配置准备
 
-无论你是 `npx` 运行还是源码运行，都建议先准备一份本地配置：
+如果你需要覆盖默认值，或者本机无法自动发现 `IronClaw` 配置，再准备一份本地配置：
 
 ```bash
 cp ./config.example.json ./config.local.json
 ```
 
-然后把你自己的：
+然后按需覆盖这些字段：
 
 - `ironclaw.baseUrl`
 - `ironclaw.gatewayToken`
@@ -167,7 +175,7 @@ cp ./config.example.json ./config.local.json
 先执行扫码登录：
 
 ```bash
-npx ironclaw-weixin-bridge login --config ./config.local.json --account default
+npx ironclaw-weixin-bridge login --account default
 ```
 
 执行后程序会输出二维码 URL。你可以：
@@ -181,16 +189,22 @@ npx ironclaw-weixin-bridge login --config ./config.local.json --account default
 <stateDir>/accounts/default.json
 ```
 
+如果你需要显式指定配置文件：
+
+```bash
+npx ironclaw-weixin-bridge login --config ./config.local.json --account default
+```
+
 如果你是从源码仓库直接运行，对应命令是：
 
 ```bash
-node ./src/cli.mjs login --config ./config.local.json --account default
+node ./src/cli.mjs login --account default
 ```
 
 ## 运行桥接器
 
 ```bash
-npx ironclaw-weixin-bridge run --config ./config.local.json
+npx ironclaw-weixin-bridge run
 ```
 
 启动后会自动：
@@ -202,16 +216,22 @@ npx ironclaw-weixin-bridge run --config ./config.local.json
 - 持续监听 `IronClaw` SSE 事件
 - 把最终回复回发给微信
 
+如果你需要显式指定配置文件：
+
+```bash
+npx ironclaw-weixin-bridge run --config ./config.local.json
+```
+
 如果你是从源码仓库直接运行，对应命令是：
 
 ```bash
-node ./src/cli.mjs run --config ./config.local.json
+node ./src/cli.mjs run
 ```
 
 ## 健康检查
 
 ```bash
-npx ironclaw-weixin-bridge doctor --config ./config.local.json
+npx ironclaw-weixin-bridge doctor
 ```
 
 会检查：
@@ -220,10 +240,16 @@ npx ironclaw-weixin-bridge doctor --config ./config.local.json
 - gateway token 是否有效
 - 本地账号是否已经登录
 
+如果你需要显式指定配置文件：
+
+```bash
+npx ironclaw-weixin-bridge doctor --config ./config.local.json
+```
+
 如果你是从源码仓库直接运行，对应命令是：
 
 ```bash
-node ./src/cli.mjs doctor --config ./config.local.json
+node ./src/cli.mjs doctor
 ```
 
 ## 测试

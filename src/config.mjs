@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 import { resolveDefaultStateDir, toArray } from "./util.mjs";
 
@@ -63,14 +64,63 @@ function normalizeAccount(account) {
   };
 }
 
-export function loadConfig({ configPath, env = process.env } = {}) {
+function normalizeCliValue(value) {
+  if (value == null) return null;
+  const text = String(value).trim();
+  if (!text || text === "null" || text === "undefined") return null;
+  return text;
+}
+
+function readIronclawConfigValue(key, { execFileSyncImpl = execFileSync } = {}) {
+  try {
+    const output = execFileSyncImpl("ironclaw", ["config", "get", key], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return normalizeCliValue(output);
+  } catch {
+    return null;
+  }
+}
+
+export function discoverIronclawGateway({ execFileSyncImpl = execFileSync } = {}) {
+  const gatewayToken = readIronclawConfigValue("channels.gateway_auth_token", { execFileSyncImpl });
+  const gatewayHost = readIronclawConfigValue("channels.gateway_host", { execFileSyncImpl });
+  const gatewayPort = readIronclawConfigValue("channels.gateway_port", { execFileSyncImpl });
+  const gatewayEnabled = readIronclawConfigValue("channels.gateway_enabled", { execFileSyncImpl });
+
+  let baseUrl = null;
+  if (gatewayEnabled !== "false") {
+    const host = gatewayHost || "127.0.0.1";
+    const port = gatewayPort || "3000";
+    baseUrl = `http://${host}:${port}`;
+  }
+
+  return {
+    gatewayToken,
+    baseUrl,
+  };
+}
+
+export function loadConfig({
+  configPath,
+  env = process.env,
+  discoverIronclawGatewayImpl = discoverIronclawGateway,
+} = {}) {
   const fileConfig = configPath ? readJsonIfExists(configPath) : null;
   const merged = merge(DEFAULT_CONFIG, fileConfig ?? {});
+  const discoveredIronclaw = discoverIronclawGatewayImpl();
 
   if (env.BRIDGE_STATE_DIR) merged.stateDir = env.BRIDGE_STATE_DIR;
-  if (env.IRONCLAW_BASE_URL) merged.ironclaw.baseUrl = env.IRONCLAW_BASE_URL;
+  if (env.IRONCLAW_BASE_URL) {
+    merged.ironclaw.baseUrl = env.IRONCLAW_BASE_URL;
+  } else if (!fileConfig?.ironclaw?.baseUrl && discoveredIronclaw.baseUrl) {
+    merged.ironclaw.baseUrl = discoveredIronclaw.baseUrl;
+  }
   if (env.IRONCLAW_GATEWAY_TOKEN) {
     merged.ironclaw.gatewayToken = env.IRONCLAW_GATEWAY_TOKEN;
+  } else if (!fileConfig?.ironclaw?.gatewayToken && discoveredIronclaw.gatewayToken) {
+    merged.ironclaw.gatewayToken = discoveredIronclaw.gatewayToken;
   }
   if (env.WEIXIN_BASE_URL) merged.weixin.baseUrl = env.WEIXIN_BASE_URL;
   if (env.WEIXIN_LOGIN_BOT_TYPE) merged.weixin.loginBotType = env.WEIXIN_LOGIN_BOT_TYPE;
