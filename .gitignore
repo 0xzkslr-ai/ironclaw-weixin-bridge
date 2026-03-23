@@ -1,0 +1,7 @@
+state/
+*.log
+node_modules/
+bridge.out
+bridge.pid
+config.local.json
+*.local.json

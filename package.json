@@ -1,0 +1,38 @@
+{
+  "name": "ironclaw-weixin-bridge",
+  "version": "0.1.0",
+  "description": "Standalone Weixin bridge for IronClaw using the gateway HTTP API",
+  "keywords": [
+    "ironclaw",
+    "weixin",
+    "wechat",
+    "bridge",
+    "gateway",
+    "cli"
+  ],
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "config.example.json"
+  ],
+  "bin": {
+    "ironclaw-weixin-bridge": "./src/cli.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "node ./src/cli.mjs run",
+    "doctor": "node ./src/cli.mjs doctor",
+    "pack:check": "npm pack --dry-run",
+    "test": "node --test",
+    "prepublishOnly": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

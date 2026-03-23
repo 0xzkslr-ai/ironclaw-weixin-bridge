@@ -1,0 +1,27 @@
+{
+  "stateDir": "./state",
+  "ironclaw": {
+    "baseUrl": "http://127.0.0.1:3000",
+    "gatewayToken": "replace-with-your-gateway-token",
+    "responseTimeoutMs": 300000,
+    "reconnectDelayMs": 1500
+  },
+  "weixin": {
+    "baseUrl": "https://ilinkai.weixin.qq.com",
+    "loginBotType": "3",
+    "longPollTimeoutMs": 35000,
+    "idleRetryDelayMs": 2000
+  },
+  "bridge": {
+    "sendTyping": false,
+    "unsupportedMediaNotice": true
+  },
+  "accounts": [
+    {
+      "id": "default",
+      "enabled": true,
+      "name": "default",
+      "allowFrom": []
+    }
+  ]
+}
