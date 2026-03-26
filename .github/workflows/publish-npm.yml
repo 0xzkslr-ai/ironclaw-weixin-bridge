@@ -21,7 +21,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.14.0
-          registry-url: https://registry.npmjs.org
           cache: npm
 
       - name: Upgrade npm
@@ -49,4 +48,4 @@ jobs:
           fi
 
       - name: Publish to npm with Trusted Publishing
-        run: npm publish --access public
+        run: npm publish --access public --provenance
