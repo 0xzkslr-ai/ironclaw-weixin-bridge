@@ -7,10 +7,10 @@ StartLimitIntervalSec=0
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/ironclaw-weixin-bridge-repo
+WorkingDirectory=/root
 Environment=HOME=/root
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/usr/bin/node /root/ironclaw-weixin-bridge-repo/src/cli.mjs run
+ExecStart=/usr/bin/npx --yes ironclaw-weixin-bridge run
 Restart=always
 RestartSec=5
 TimeoutStopSec=20

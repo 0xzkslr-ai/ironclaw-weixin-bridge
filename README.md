@@ -29,7 +29,7 @@ npx ironclaw-weixin-bridge run
 - 你扫码后，程序会自动继续运行
 - 如果本地已经登录，会直接开始桥接
 
-如果你用源码仓库运行：
+如果你用源码仓库调试：
 
 ```bash
 cd /root/ironclaw-weixin-bridge-repo
@@ -57,7 +57,7 @@ node ./src/cli.mjs login --account default
 
 ## 后台常驻
 
-仓库里已经提供 `systemd` 服务文件：
+仓库里已经提供 `systemd` 服务文件，服务本身直接运行发布包：
 
 - [deploy/systemd/ironclaw-weixin-bridge.service](/root/ironclaw-weixin-bridge-repo/deploy/systemd/ironclaw-weixin-bridge.service)
 - [deploy/systemd/install-service.sh](/root/ironclaw-weixin-bridge-repo/deploy/systemd/install-service.sh)
@@ -68,6 +68,12 @@ node ./src/cli.mjs login --account default
 cd /root/ironclaw-weixin-bridge-repo
 chmod +x ./deploy/systemd/install-service.sh
 sudo ./deploy/systemd/install-service.sh
+```
+
+这个 service 实际执行的是：
+
+```bash
+npx --yes ironclaw-weixin-bridge run
 ```
 
 常用命令：
