@@ -197,3 +197,143 @@ test("processInboundMessage forwards inbound image and sends generated image rep
   assert.equal(sentBodies.length >= 2, true);
   assert.equal(sentBodies[0].msg.context_token, "ctx-2");
 });
+
+test("login prints terminal QR and saves returned account token", async () => {
+  const stateDir = makeTempDir();
+  const config = {
+    stateDir,
+    ironclaw: {
+      baseUrl: "http://ironclaw.test",
+      gatewayToken: "",
+      responseTimeoutMs: 1000,
+      reconnectDelayMs: 50,
+    },
+    weixin: {
+      baseUrl: "https://weixin.test",
+      loginBotType: "3",
+      longPollTimeoutMs: 1000,
+      idleRetryDelayMs: 10,
+    },
+    bridge: {
+      sendTyping: false,
+      unsupportedMediaNotice: true,
+    },
+    accounts: [{ id: "default", enabled: true, name: "default", allowFrom: [] }],
+  };
+
+  const writes = [];
+  const infos = [];
+  const runtime = new WeixinBridgeRuntime({
+    config,
+    fetchImpl: async (url) => {
+      const href = String(url);
+      if (href.includes("/ilink/bot/get_bot_qrcode?bot_type=3")) {
+        return new Response(
+          JSON.stringify({
+            qrcode: "qr-token-1",
+            qrcode_img_content: "https://liteapp.weixin.qq.com/q/test?qrcode=qr-token-1&bot_type=3",
+          }),
+          { status: 200 },
+        );
+      }
+      if (href.includes("/ilink/bot/get_qrcode_status?qrcode=qr-token-1")) {
+        return new Response(
+          JSON.stringify({
+            status: "confirmed",
+            bot_token: "wx-bot-token",
+            ilink_bot_id: "bot-1@im.bot",
+            ilink_user_id: "user-1@im.wechat",
+            baseurl: "https://weixin.test",
+          }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${href}`);
+    },
+    logger: {
+      debug() {},
+      info(message) {
+        infos.push(message);
+      },
+      warn() {},
+      error() {},
+    },
+    output: {
+      write(chunk) {
+        writes.push(String(chunk));
+      },
+    },
+  });
+
+  const result = await runtime.login({ accountId: "default" });
+
+  assert.equal(result.connected, true);
+  assert.equal(writes.length, 1);
+  assert.match(writes[0], /\x1b\[4[07]m/);
+  assert.deepEqual(infos, [
+    "Weixin QR token: qr-token-1",
+    "Scan this QR URL with Weixin: https://liteapp.weixin.qq.com/q/test?qrcode=qr-token-1&bot_type=3",
+  ]);
+  assert.equal(runtime.store.loadAccount("default").token, "wx-bot-token");
+});
+
+test("run auto-logins before starting bridge loop when account is missing", async () => {
+  const stateDir = makeTempDir();
+  const config = {
+    stateDir,
+    ironclaw: {
+      baseUrl: "http://ironclaw.test",
+      gatewayToken: "token",
+      responseTimeoutMs: 1000,
+      reconnectDelayMs: 50,
+    },
+    weixin: {
+      baseUrl: "https://weixin.test",
+      loginBotType: "3",
+      longPollTimeoutMs: 1000,
+      idleRetryDelayMs: 10,
+    },
+    bridge: {
+      sendTyping: false,
+      unsupportedMediaNotice: true,
+    },
+    accounts: [{ id: "default", enabled: true, name: "default", allowFrom: [] }],
+  };
+
+  const steps = [];
+  const runtime = new WeixinBridgeRuntime({
+    config,
+    logger: {
+      debug() {},
+      info(message) {
+        steps.push(`info:${message}`);
+      },
+      warn() {},
+      error() {},
+    },
+  });
+
+  runtime.login = async ({ accountId }) => {
+    steps.push(`login:${accountId}`);
+    runtime.store.saveAccount(accountId, {
+      token: "wx-bot-token",
+      baseUrl: "https://weixin.test",
+    });
+    return { connected: true };
+  };
+  runtime.client.start = async () => {
+    steps.push("client:start");
+  };
+  runtime.runAccount = async (account) => {
+    steps.push(`runAccount:${account.id}`);
+  };
+
+  await runtime.run();
+
+  assert.deepEqual(steps, [
+    "info:Account default is not logged in. Starting QR login...",
+    "login:default",
+    "client:start",
+    "runAccount:default",
+  ]);
+});

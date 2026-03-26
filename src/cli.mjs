@@ -36,7 +36,7 @@ function printHelp() {
 
 Commands:
   login            Start QR login and save the Weixin token
-  run              Start the long-poll bridge
+  run              Start the bridge. If not logged in, QR login runs first
   doctor           Validate IronClaw connectivity and local state
   help             Show this message
 

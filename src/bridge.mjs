@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import { IronclawClient } from "./ironclaw-client.mjs";
+import { renderTerminalQr } from "./qr.mjs";
 import { StateStore } from "./store.mjs";
 import {
   describeUnsupportedMessage,
@@ -24,10 +25,11 @@ import {
 } from "./media.mjs";
 
 export class WeixinBridgeRuntime {
-  constructor({ config, fetchImpl = fetch, logger }) {
+  constructor({ config, fetchImpl = fetch, logger, output = process.stdout }) {
     this.config = config;
     this.fetchImpl = fetchImpl;
     this.logger = logger;
+    this.output = output;
     this.store = new StateStore(config.stateDir);
     this.client = new IronclawClient({
       baseUrl: config.ironclaw.baseUrl,
@@ -64,6 +66,11 @@ export class WeixinBridgeRuntime {
       fetchImpl: this.fetchImpl,
     });
 
+    const terminalQr = await renderTerminalQr(qr.qrcodeUrl).catch(() => null);
+    if (terminalQr) {
+      this.output.write(`${terminalQr}\n`);
+    }
+    this.logger.info(`Weixin QR token: ${qr.qrcode}`);
     this.logger.info(`Scan this QR URL with Weixin: ${qr.qrcodeUrl}`);
 
     const result = await waitForQrLogin({
@@ -88,7 +95,23 @@ export class WeixinBridgeRuntime {
     return result;
   }
 
+  async ensureLoggedInAccount(account) {
+    const saved = this.store.loadAccount(account.id);
+    if (saved?.token) return saved;
+
+    this.logger.info(`Account ${account.id} is not logged in. Starting QR login...`);
+    await this.login({ accountId: account.id });
+    const refreshed = this.store.loadAccount(account.id);
+    if (!refreshed?.token) {
+      throw new Error(`Account ${account.id} login completed but no token was saved`);
+    }
+    return refreshed;
+  }
+
   async run({ signal } = {}) {
+    for (const account of this.getEnabledAccounts()) {
+      await this.ensureLoggedInAccount(account);
+    }
     await this.client.start(signal);
     const runners = this.getEnabledAccounts().map((account) => this.runAccount(account, signal));
     await Promise.all(runners);

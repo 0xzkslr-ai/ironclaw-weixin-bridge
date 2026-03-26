@@ -33,6 +33,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
   "scripts": {
     "start": "node ./src/cli.mjs run",
     "doctor": "node ./src/cli.mjs doctor",
